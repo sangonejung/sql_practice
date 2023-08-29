@@ -92,6 +92,7 @@ __UNIQUE__ The unique key is also a unique identifier for records when the prima
 __PRIMARY KEY__ vs __UNIQUE__<br/>
 Primary Key cannot store NULL values in the but Unique key can store NULL values. Furthermore, Primary Key cannot be updated but an Unique Key can be updated<br/><br/>
 __NOT NULL__ columns must have a value. Attempts to insert a row without a value for a NOT NULL column will result in a constraint violation and the new row will not be inserted. <br/>
+
 __DEFAULT__ columns take an additional argument that will be the assumed value for an inserted row if the new row does not specify a value for that column.
 ```sql
 CREATE TABLE celebs (
@@ -176,19 +177,19 @@ WHERE twitter_handle IS NULL;
 | -- | -- | --| --|
 | 4| Taylor | 36 | @taylorswift13| 
 # Chapter 3: SQL Queries
-## As
+## AS
 The columns or tables can be aliased using the __AS__ clause. This allows columns or tables to be specifically renamed in the returned result set.
 ```sql
-SELECT col_name AS new_col_name, col_name2 AS new_col_name2
+SELECT col_name AS 'new_col_name', col_name2 AS 'new_col_name2'
 FROM table_name
 ```
-## Distinct
+## DISTINCT
 Unique values of a column can be selected using a __DISTINCT__ query. It filters duplicate entries.
 ```sql
 SELECT DISTINCT col_name
 FROM table_name
 ```
-## Like (Wildcard)
+## LIKE (Wildcard)
 The __LIKE__ operator can be used inside of a WHERE clause to match a specified pattern. The '%' wildcard can be used in a LIKE operator pattern to match any single unspecified character. 
 * A% matches with names that begin with letter 'A'
 * %A matches with names that end with 'A'
@@ -197,33 +198,41 @@ The __LIKE__ operator can be used inside of a WHERE clause to match a specified 
 ```sql
 SELECT * 
 FROM table_name 
-WHERE name LIKE '%ABC%';
+WHERE col_name LIKE '%ABC%';
 ```
-## Between
+## BETWEEN
 The __BETWEEN__ operator can be used to filter by a range of values. The range of values can be text, numbers, or date data.
 
 * Number
 
-For numbers, 
-* Text
-
-For text, 
-
 ```sql
 SELECT *
 FROM table_name
-WHERE col_name BETWEEN 1 AND 999;
+WHERE col_name BETWEEN num_1 AND num_2;
 ```
-## Order By
+* Text
+```sql
+SELECT *
+FROM table_name
+WHERE col_name BETWEEN text_1 AND text_2;
+```
+
+## ORDER BY
 The __ORDER BY__ clause can be used to sort the result set by a particular column either alphabetically or numerically. It can be ordered in two ways:
 * __DESC__ is a keyword used to sort the results in descending order.
 * __ASC__ is a keyword used to sort the results in ascending order (default).
 ```sql
 SELECT *
 FROM table_name
-ORDER BY id DESC;
+ORDER BY col_name DESC;
 ```
-## Case
+It is also possible to order by multiple times
+```sql
+SELECT *
+FROM table_name
+ORDER BY col_name1 ASC, col_name2 DESC;
+```
+## CASE
 A __CASE__ statement allows us to create different outputs (usually in the SELECT statement).
 ```sql
 SELECT col_name,
@@ -232,22 +241,221 @@ SELECT col_name,
   WHEN condition_2 THEN 'result_2'
   ELSE 'result_3'
  END AS 'new_col_name'
-FROM movies;
+FROM table_name;
 ```
 Condition needs either '>' or '<', or '='
 
 # Chapter 4: SQL Aggregations
 ## Definition
-## Count
-# Chapter 5: SQL Multiple Tables
-## Introduction
-## Combining Tables
-## Inner Joins
-## Left Joins
-# Chapter 6: Analyzing Real Data with SQL
+SQL Queries don’t just access raw data, they can also perform calculations on the raw data to answer specific data questions.
+Calculations performed on multiple rows of a table are called __aggregates__
+## COUNT
+The __COUNT()__ aggregate function returns the total number of rows that match the specified criteria
+
+* __COUNT(*)__  counts every row
+* __COUNT(col_name)__ does not count NULL values in that column.
+
+Counts the total number of rows in table_name
+```sql
+SELECT COUNT(*)
+FROM table_name;
+```
+Counts the number of rows of col_name that are not NULL 
+```sql
+SELECT COUNT(col_name)
+FROM table_name;
+```
+
+## SUM
+The __SUM()__ aggregate function takes the name of a column as an argument and returns the sum of all the value in that column. Ignores the NULL value and will be counted as 0
+
+Sums the values of the col_name
+```sql
+SELECT SUM(col_name)
+FROM table_name;
+```
+Sums the values of the col_name with the given condition
+```sql
+SELECT SUM(col_name)
+FROM table_name
+WHERE condition_1
+```
+## MAX/MIN
+The __MAX()__ and __MIN()__ functions return the highest and lowest values in a column, respectively.
+
+Maximum value of the col_name
+```sql
+SELECT MAX(col_name)
+FROM table_name
+```
+Minimum value of the col_name 
+```sql
+SELECT MIN(col_name)
+FROM table_name
+```
+## AVG
+The __AVG()__ aggregate function returns the average value in a column.
+
+Avg value of the col_name
+```sql
+SELECT AVG(col_name)
+FROM table_name
+```
+## ROUND
+The __ROUND()__ function will round a number value to a specified number of places. It takes two arguments: a number, and a number of decimal places. It can be combined with other aggregate functions
+
+Round value of the col_name to the num_1 place
+```sql
+SELECT ROUND(col_name, num_1)
+FROM table_name
+```
+Nested Aggregates such as the one below also works as well
+```sql
+SELECT ROUND(AVG(col_name), num_1)
+FROM table_name
+```
+## GROUP BY
+The __GROUP BY__ clause will group records in a result set by identical values in one or more columns. It is often used in combination with aggregate functions to query information of similar records. 
+
+The __GROUP BY__ clause can come after __FROM__ or __WHERE__ but MUST come before any __ORDER BY__ or __LIMIT__ clause.
+
+Assume aggregate() function can be any one of the aggregates we have learned so far. This will cluster the table by col_name
+```sql
+SELECT col_name, aggreagate(col_name) 
+FROM table_name
+GROUP BY col_name;
+```
+Again, assume aggregate() function can be any one of the aggregates we have learned so far. We can cluster within another clustered table
+```sql
+SELECT col_name, col_name2, aggregate(col_name3) 
+FROM table_name
+GROUP BY col_name, col_name2;
+```
+## HAVING
+The __HAVING__ clause is used to further filter the result set groups provided by the GROUP BY clause. It is often used with aggregate functions to filter the result set groups based on an aggregate property. It is different from __WHERE__ clause because __HAVING__ clause is filtering the groups not the rows.
+
+The __HAVING__ clause MUST always come after a __GROUP BY__ clause but MUST come before any __ORDER BY__ or __LIMIT__ clause.
+
+Filters out that have condition1 from grouping
+```sql
+SELECT col_name, 
+   aggregate(col_name2) 
+FROM table_name
+GROUP BY col_name
+HAVING condition1;
+```
+
+# Chapter 5.1: SQL Multiple Tables
+## INNER & FULL OUTER JOIN
+The __INNER JOIN__ (or __JOIN__) clause allows $A \cap B$ by joining _common_ values specified using an __ON__ clause.
+
+```sql
+SELECT * 
+FROM table_name1 
+INNER JOIN table_name2  
+  ON table_name1.column = table_name2.column;
+```
+
+The __FULL OUTER JOIN__ clause allows $A \cup B$ by joining _all_ values specified using an __ON__ clause. 
+
+```sql
+SELECT * 
+FROM table_name1 
+FULL OUTER JOIN table_name2  
+  ON table_name1.column = table_name2.column;
+```
+
+## LEFT & RIGHT JOIN
+ In a __LEFT JOIN__ and __RIGHT JOIN__, every row in the left table or the right table respectively is returned in the final table. Suppose the join condition is not met, then __NULL__ values are used to fill in the columns. 
+
+ In the view of sets, we are joining by excluding either $A^c$ or $B^c$
+
+__table_name1__ is the left table 
+```sql
+SELECT * 
+FROM table_name1 
+LEFT JOIN table_name2  
+  ON table_name1.column = table_name2.column;
+```
+__table_name2__ is the right table 
+```sql
+SELECT * 
+FROM table_name2 
+RIGHT JOIN table_name1  
+  ON table_name1.column = table_name2.column;
+```
+
+## PRIMARY KEY & FOREIGN KEY
+__PRIMARY KEY__ uniquely identifies each row of that table for each table. 
+
+Requirements for a __PRIMARY KEY__
+* None of the values can be __NULL__
+* Each value must be unique. No duplicates allowed
+* A table cannot have more than one primary key column
+
+__FOREIGN KEY__ is a primary key for one table that appears in a different table
+
+## CROSS JOIN
+The __CROSS JOIN__ clause is used to combine each row from one table with each row from another in the result set. This is helpful for creating all possible combinations for the records (rows) in two tables.
+
+The following will give us a table such that there are total of $A \choose B$ rows. In other words, for each $A$ elements, we have $B$ elements. 
+```sql
+SELECT * 
+FROM table_name1 
+CROSS JOIN table_name2  
+```
+
+__CROSS JOIN__ with a __WHERE__ clause will produce the same result as the __INNER JOIN__ clause
+```sql
+SELECT * 
+FROM table_name1 
+CROSS JOIN table_name2  
+WHERE condition1
+```
+## UNION
+The __UNION__ clause is used to combine results that appear from multiple SELECT statements and filter duplicates.
+
+Requirements for __UNION__
+* Tables must have the same number of columns.
+* The columns must have the same data types in the same order as the first table.
+```sql
+SELECT *
+FROM table_name1
+UNION
+SELECT *
+FROM table_name2
+```
+
+Difference between __UNION__ and __FULL OUTER JOIN__ is that __UNION__ simply add rows to the table whereas the __JOIN__ clauses merges columns
+
+## WITH
+The __WITH__ clause stores the result of a query in a temporary table using an alias
+
+```sql
+WITH temp_table1 AS (
+   SELECT *
+   FROM table_name1
+)
+SELECT *
+FROM temp_table1
+--More Query Statements Go Here
+```
+
+## SQL Subquery
+Here
+
+<!-- # Chapter 6: Analyzing Real Data with SQL
 ## Usage Funnel
 ## User Churn
-## Marketing Attribution
-# Chapter 7: SQL Window Function
+## Marketing Attribution -->
+
+# Chapter 6.1: SQL Window Function
 ## Introduction
-## Partition By
+## PARTITION BY
+## FIRST_VALUE & LAST_VALUE
+## LAG
+## LEAD
+## ROW_NUMBER
+## RANK
+## NTILE
+# Chapter 6.2: SQL Math and Date Functions
